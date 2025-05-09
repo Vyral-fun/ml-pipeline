@@ -1,0 +1,82 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+
+# Environment variables
+.env
+.env.local
+
+# Mac OS
+.DS_Store
+
+# Data files and models
+fine_tuned_models/
+*.csv
+!requirements.txt
+embeddings_cache/
+*.pkl
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Model files
+*.bin
+*.pt
+*.pth
+*.h5
+*.onnx
+*.model
+
+# Temporary files
+tmp/
+temp/
+.temp/
+.tmp/
+
+# Cached data
+__pycache__/
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker
+.dockerignore
