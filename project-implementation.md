@@ -169,5 +169,3 @@ Use ML/NLP to measure semantic relevance of each action
 
 Feed structured data into a pipeline that supports campaign reporting and performance-based payouts
 
-
-
