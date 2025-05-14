@@ -386,11 +386,64 @@ def main():
     st.title("Yap.market Social Listening")
     st.markdown("This application demonstrates social listening capabilities for marketing campaigns.")
     
-    # Sidebar with information
+    # Sidebar with information and settings
     with st.sidebar:
         st.header("About")
         st.markdown("This tool analyzes social media content for relevance to marketing campaigns using AI. It measures how well tweets match campaign objectives and provides relevance scores (0-10).")
         st.markdown("The system uses OpenAI embeddings with optional reinforcement learning to improve scoring over time.")
+        
+        # OpenAI API Configuration in sidebar
+        st.header("OpenAI API Configuration")
+        
+        # Initialize API key in session state if not already there
+        if "openai_api_key" not in st.session_state:
+            st.session_state["openai_api_key"] = ""
+        
+        # API key input - let the user enter it without pre-filling
+        custom_api_key = st.text_input(
+            "OpenAI API Key",
+            value=st.session_state["openai_api_key"],
+            type="password",
+            placeholder="Enter your OpenAI API key here...",
+            help="Enter your OpenAI API key. If left empty, the app will try to use the key from the .env file."
+        )
+        
+        # Save the API key to session state
+        st.session_state["openai_api_key"] = custom_api_key
+        
+        # Model selection in sidebar
+        st.header("Model Selection")
+        
+        # Initialize model names in session state if not already there
+        if "llm_model" not in st.session_state:
+            st.session_state["llm_model"] = "gpt-3.5-turbo"
+        if "embedding_model" not in st.session_state:
+            st.session_state["embedding_model"] = "text-embedding-ada-002"
+        
+        # LLM Model selection
+        llm_model = st.selectbox(
+            "LLM Model",
+            options=["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"],
+            index=["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"].index(st.session_state["llm_model"]),
+            help="Select the OpenAI model to use for detailed tweet analysis"
+        )
+        st.session_state["llm_model"] = llm_model
+        
+        # Embedding Model selection
+        embedding_model = st.selectbox(
+            "Embedding Model",
+            options=["text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large"],
+            index=["text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large"].index(st.session_state["embedding_model"]),
+            help="Select the OpenAI model to use for semantic embeddings"
+        )
+        st.session_state["embedding_model"] = embedding_model
+        
+        # Reset button
+        if st.button("Reset Settings"):
+            st.session_state["llm_model"] = "gpt-3.5-turbo"
+            st.session_state["embedding_model"] = "text-embedding-ada-002"
+            st.session_state["openai_api_key"] = ""
+            st.experimental_rerun()
     
     # Create a single tab for Twitter Analysis
     tab1 = st.tabs(["Twitter Analysis"])[0]
@@ -501,57 +554,8 @@ def main():
                 )
                 manual_tweets.append(tweet_text)
             
-            # Advanced options section with system prompt editor, API key, and model selection
+            # Advanced options section with only system prompt editor
             with st.expander("Advanced Options"):
-                # API Key section
-                st.subheader("OpenAI API Configuration")
-                
-                # Initialize API key in session state if not already there
-                if "openai_api_key" not in st.session_state:
-                    st.session_state["openai_api_key"] = ""
-                
-                # API key input - let the user enter it without pre-filling
-                custom_api_key = st.text_input(
-                    "OpenAI API Key",
-                    value=st.session_state["openai_api_key"],
-                    type="password",
-                    placeholder="Enter your OpenAI API key here...",
-                    help="Enter your OpenAI API key. If left empty, the app will try to use the key from the .env file."
-                )
-                
-                # Save the API key to session state
-                st.session_state["openai_api_key"] = custom_api_key
-                
-                # Model selection
-                st.subheader("Model Selection")
-                
-                # Initialize model names in session state if not already there
-                if "llm_model" not in st.session_state:
-                    st.session_state["llm_model"] = "gpt-3.5-turbo"
-                if "embedding_model" not in st.session_state:
-                    st.session_state["embedding_model"] = "text-embedding-ada-002"
-                
-                # Model selection dropdowns
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    llm_model = st.selectbox(
-                        "LLM Model",
-                        options=["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"],
-                        index=["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"].index(st.session_state["llm_model"]),
-                        help="Select the OpenAI model to use for detailed tweet analysis"
-                    )
-                    st.session_state["llm_model"] = llm_model
-                
-                with col2:
-                    embedding_model = st.selectbox(
-                        "Embedding Model",
-                        options=["text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large"],
-                        index=["text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large"].index(st.session_state["embedding_model"]),
-                        help="Select the OpenAI model to use for semantic embeddings"
-                    )
-                    st.session_state["embedding_model"] = embedding_model
-                
                 # System prompt section
                 st.subheader("LLM System Prompt")
                 st.markdown("Customize the instructions given to the AI model for tweet analysis.")
@@ -571,19 +575,10 @@ def main():
                 # Save the custom prompt to session state
                 st.session_state["system_prompt"] = custom_system_prompt
                 
-                # Reset buttons
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Reset to Default Prompt"):
-                        st.session_state["system_prompt"] = LLMAnalyzer.DEFAULT_SYSTEM_PROMPT
-                        st.experimental_rerun()
-                with col2:
-                    if st.button("Reset All Settings"):
-                        st.session_state["system_prompt"] = LLMAnalyzer.DEFAULT_SYSTEM_PROMPT
-                        st.session_state["llm_model"] = "gpt-3.5-turbo"
-                        st.session_state["embedding_model"] = "text-embedding-ada-002"
-                        st.session_state["openai_api_key"] = ""
-                        st.experimental_rerun()
+                # Reset button
+                if st.button("Reset to Default Prompt"):
+                    st.session_state["system_prompt"] = LLMAnalyzer.DEFAULT_SYSTEM_PROMPT
+                    st.experimental_rerun()
             
             # Analyze button for manual tweets
             if st.button("Analyze Manual Tweets", type="primary"):
