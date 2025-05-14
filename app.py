@@ -85,7 +85,7 @@ class LLMAnalyzer:
     target audience characteristics, and key messaging points as described in the brief.
     """
     
-    def __init__(self, api_key=None, custom_system_prompt=None):
+    def __init__(self, api_key=None, custom_system_prompt=None, model_name=None, embedding_model_name=None):
         """Initialize the LLM analyzer with OpenAI API key and optional custom system prompt"""
         # Try to get API key from parameter or environment
         self.api_key = api_key or os.getenv("OPENAI_API_KEY") or openai.api_key
@@ -93,10 +93,16 @@ class LLMAnalyzer:
         # Set system prompt (use custom if provided, otherwise use default)
         self.system_prompt = custom_system_prompt or self.DEFAULT_SYSTEM_PROMPT
         
+        # Set model names (use custom if provided, otherwise use defaults)
+        self.model = model_name or "gpt-3.5-turbo"
+        self.embedding_model = embedding_model_name or "text-embedding-ada-002"
+        
         # Debug API key information
         if self.api_key:
             masked_key = f"{self.api_key[:8]}...{self.api_key[-5:]}"
             print(f"✅ LLMAnalyzer: API key found (starts with {self.api_key[:8]}...)")
+            print(f"Using LLM model: {self.model}")
+            print(f"Using embedding model: {self.embedding_model}")
         else:
             print("❌ LLMAnalyzer: No API key found! Check your .env file or pass a key directly.")
             print(f"Current environment variables: {list(os.environ.keys())}")
@@ -104,7 +110,6 @@ class LLMAnalyzer:
         
         # Initialize OpenAI client
         self.client = openai.OpenAI(api_key=self.api_key)
-        self.model = "gpt-3.5-turbo"
     
     def analyze_tweet_with_llm(self, campaign_brief, tweet_text):
         """Analyze a tweet using GPT-3.5-turbo to evaluate relevance and sentiment"""
@@ -196,21 +201,25 @@ class LLMAnalyzer:
 
 
 class SimpleSemanticAnalyzer:
-    def __init__(self, api_key=None):
-        # Try to get API key from parameter, environment, or global setting
+    """Simple analyzer that uses OpenAI embeddings to evaluate tweets against campaign briefs"""
+    
+    def __init__(self, api_key=None, embedding_model_name=None):
+        """Initialize the semantic analyzer with OpenAI API key and optional embedding model name"""
+        # Try to get API key from parameter or environment
         self.api_key = api_key or os.getenv("OPENAI_API_KEY") or openai.api_key
+        
+        # Set embedding model name (use custom if provided, otherwise use default)
+        self.model = embedding_model_name or "text-embedding-ada-002"
         
         # Debug API key information
         if self.api_key:
-            print(f"✅ SimpleSemanticAnalyzer: API key found (starts with {self.api_key[:8]}...)")
+            print(f"✅ SimpleSemanticAnalyzer: API key found")
+            print(f"Using embedding model: {self.model}")
         else:
-            print("❌ SimpleSemanticAnalyzer: No API key found! Check your .env file.")
-            print(f"Current working directory: {os.getcwd()}")
-            print(f"Is .env file present? {'Yes' if os.path.exists('.env') else 'No'}")
-            
+            print("❌ SimpleSemanticAnalyzer: No API key found! Check your .env file or pass a key directly.")
+        
         # Initialize OpenAI client
         self.client = openai.OpenAI(api_key=self.api_key)
-        self.model = "text-embedding-3-large"
     
     def get_embeddings(self, text):
         """Get embeddings for text using OpenAI API"""
@@ -492,8 +501,58 @@ def main():
                 )
                 manual_tweets.append(tweet_text)
             
-            # Advanced options section with system prompt editor
+            # Advanced options section with system prompt editor, API key, and model selection
             with st.expander("Advanced Options"):
+                # API Key section
+                st.subheader("OpenAI API Configuration")
+                
+                # Initialize API key in session state if not already there
+                if "openai_api_key" not in st.session_state:
+                    st.session_state["openai_api_key"] = ""
+                
+                # API key input - let the user enter it without pre-filling
+                custom_api_key = st.text_input(
+                    "OpenAI API Key",
+                    value=st.session_state["openai_api_key"],
+                    type="password",
+                    placeholder="Enter your OpenAI API key here...",
+                    help="Enter your OpenAI API key. If left empty, the app will try to use the key from the .env file."
+                )
+                
+                # Save the API key to session state
+                st.session_state["openai_api_key"] = custom_api_key
+                
+                # Model selection
+                st.subheader("Model Selection")
+                
+                # Initialize model names in session state if not already there
+                if "llm_model" not in st.session_state:
+                    st.session_state["llm_model"] = "gpt-3.5-turbo"
+                if "embedding_model" not in st.session_state:
+                    st.session_state["embedding_model"] = "text-embedding-ada-002"
+                
+                # Model selection dropdowns
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    llm_model = st.selectbox(
+                        "LLM Model",
+                        options=["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"],
+                        index=["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"].index(st.session_state["llm_model"]),
+                        help="Select the OpenAI model to use for detailed tweet analysis"
+                    )
+                    st.session_state["llm_model"] = llm_model
+                
+                with col2:
+                    embedding_model = st.selectbox(
+                        "Embedding Model",
+                        options=["text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large"],
+                        index=["text-embedding-ada-002", "text-embedding-3-small", "text-embedding-3-large"].index(st.session_state["embedding_model"]),
+                        help="Select the OpenAI model to use for semantic embeddings"
+                    )
+                    st.session_state["embedding_model"] = embedding_model
+                
+                # System prompt section
                 st.subheader("LLM System Prompt")
                 st.markdown("Customize the instructions given to the AI model for tweet analysis.")
                 
@@ -512,10 +571,19 @@ def main():
                 # Save the custom prompt to session state
                 st.session_state["system_prompt"] = custom_system_prompt
                 
-                # Reset button
-                if st.button("Reset to Default Prompt"):
-                    st.session_state["system_prompt"] = LLMAnalyzer.DEFAULT_SYSTEM_PROMPT
-                    st.experimental_rerun()
+                # Reset buttons
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Reset to Default Prompt"):
+                        st.session_state["system_prompt"] = LLMAnalyzer.DEFAULT_SYSTEM_PROMPT
+                        st.experimental_rerun()
+                with col2:
+                    if st.button("Reset All Settings"):
+                        st.session_state["system_prompt"] = LLMAnalyzer.DEFAULT_SYSTEM_PROMPT
+                        st.session_state["llm_model"] = "gpt-3.5-turbo"
+                        st.session_state["embedding_model"] = "text-embedding-ada-002"
+                        st.session_state["openai_api_key"] = ""
+                        st.experimental_rerun()
             
             # Analyze button for manual tweets
             if st.button("Analyze Manual Tweets", type="primary"):
@@ -546,10 +614,20 @@ def main():
                             st.session_state["campaign_brief"] = campaign_brief
                             
                             # Process each tweet with the semantic analyzer
-                            # Use custom system prompt if available
+                            # Use custom settings if available
                             custom_prompt = st.session_state.get("system_prompt", LLMAnalyzer.DEFAULT_SYSTEM_PROMPT)
-                            analyzer = SimpleSemanticAnalyzer()
-                            llm_analyzer = LLMAnalyzer(custom_system_prompt=custom_prompt)
+                            custom_api_key = st.session_state.get("openai_api_key", None)
+                            llm_model = st.session_state.get("llm_model", "gpt-3.5-turbo")
+                            embedding_model = st.session_state.get("embedding_model", "text-embedding-ada-002")
+                            
+                            # Initialize analyzers with custom settings
+                            analyzer = SimpleSemanticAnalyzer(api_key=custom_api_key, embedding_model_name=embedding_model)
+                            llm_analyzer = LLMAnalyzer(
+                                api_key=custom_api_key,
+                                custom_system_prompt=custom_prompt,
+                                model_name=llm_model,
+                                embedding_model_name=embedding_model
+                            )
                             results = []
                             
                             # Create a progress bar
