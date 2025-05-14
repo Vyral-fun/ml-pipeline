@@ -9,3 +9,6 @@ urllib3==1.26.18
 six>=1.16.0
 requests<3,>=2.27.0
 sentence-transformers>=2.2.0
+fastapi>=0.110.0
+uvicorn>=0.29.0
+python-multipart>=0.0.9

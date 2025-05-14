@@ -78,5 +78,8 @@ __pycache__/
 .coverage
 htmlcov/
 
+# API configuration
+api_config.env
+
 # Docker
 .dockerignore
